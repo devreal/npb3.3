@@ -122,7 +122,6 @@ CLINKFLAGS = -O
 # This is the C++ compiler used for C++ programs
 #---------------------------------------------------------------------------
 CXX = mpic++
-CXX = dash-mpic++
 # This links C programs; usually the same as ${CC}
 CXXLINK	= $(CXX)
 
@@ -139,9 +138,9 @@ CXX_INC =
 #---------------------------------------------------------------------------
 # Global *compile time* flags for C programs
 #---------------------------------------------------------------------------
-#CXXFLAGS	= -std=c++17 -g -O2 -DNDEBUG
+CXXFLAGS	= -std=c++17 -g -O2 -DNDEBUG
 #CXXFLAGS	= -std=c++17 -g -O0
-CXXFLAGS	= -std=c++17 -g -O1
+#CXXFLAGS	= -std=c++17 -g -O1
 
 #---------------------------------------------------------------------------
 # Global *link time* flags. Flags for increasing maximum executable 
