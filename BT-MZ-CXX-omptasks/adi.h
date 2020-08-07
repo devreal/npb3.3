@@ -25,8 +25,6 @@ void adi(ValueT* rho_i,
               forcing, u, nx, nxmax, ny, nz);
 
   x_solve(rho_i, qs, square, u, rhs, nx, nxmax, ny, nz);
-  // TODO: this taskwait is needed for some reason, maybe dependencies are broken?
-#pragma omp taskwait
 
   y_solve(rho_i, qs, square, u, rhs, nx, nxmax, ny, nz);
 
