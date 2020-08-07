@@ -100,6 +100,12 @@ c---------------------------------------------------------------------
 
 
   mpi_setup();
+
+  //print_binding();
+
+  // start progress thread early to avoid binding to same CPU as thread 0
+  start_progress_thread();
+
   if (active) {
 
 /*
@@ -367,6 +373,7 @@ c---------------------------------------------------------------------
     }
  //999   continue
   }
+  stop_progress_thread();
   MPI_Wait(&cont_req, MPI_STATUS_IGNORE);
   MPI_Request_free(&cont_req);
   MPI_Finalize();

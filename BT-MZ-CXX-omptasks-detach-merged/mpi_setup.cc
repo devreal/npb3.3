@@ -60,7 +60,7 @@ void mpi_setup()
   MPI_Comm_size(MPI_COMM_WORLD, &no_nodes);
   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
-  MPI_Continue_init(&request_completion_cb, &cont_req);
+  MPI_Continue_init(&cont_req);
 
 
   zone_proc_id.allocate(max_zones);

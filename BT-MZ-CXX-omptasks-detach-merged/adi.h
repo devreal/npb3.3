@@ -21,20 +21,24 @@ void adi(ValueT* rho_i,
          ValueT* u,
          SizeT nx, SizeT nxmax, SizeT ny, SizeT nz)
 {
+
+//#pragma omp taskgroup
+{
   compute_rhs(rho_i, us, vs, ws, qs, square, rhs,
               forcing, u, nx, nxmax, ny, nz);
 
   x_solve(rho_i, qs, square, u, rhs, nx, nxmax, ny, nz);
   // TODO: this taskwait is needed for some reason, maybe dependencies are broken?
-#pragma omp taskwait
+//#pragma omp taskwait
 
   y_solve(rho_i, qs, square, u, rhs, nx, nxmax, ny, nz);
-
+}
   // wait for all tasks to complete
 #pragma omp taskwait
-
+//#pragma omp taskgroup
+{
   z_solve(rho_i, qs, square, u, rhs, nx, nxmax, ny, nz);
-
+}
   // wait for all tasks to complete
 #pragma omp taskwait
 

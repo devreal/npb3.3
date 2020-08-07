@@ -254,47 +254,99 @@ void print_zone(
 bool mpi_poll_service(void* data);
 
 #include <mpi.h>
+#include <chrono>
 
-#define USE_PROGRESS_THREAD
+//#define USE_PROGRESS_THREAD
+
+static
+void print_binding()
+{
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    pthread_getaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+    printf("Set returned by pthread_getaffinity_np() contained:\n");
+    for (int j = 0; j < CPU_SETSIZE; j++)
+        if (CPU_ISSET(j, &cpuset))
+            printf("  %d", j);
+    printf("Running on thread %d\n", omp_get_thread_num());
+}
+
+static volatile int do_progress = 1;
+
+static std::thread progress_thread;
+
+static void start_progress_thread()
+{
+#if defined(USE_PROGRESS_THREAD)
+  progress_thread = std::thread([&]()
+  {
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    pthread_getaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+    for (int i = 0; i < CPU_SETSIZE; ++i) {
+      if (CPU_ISSET(i, &cpuset)) {
+        CPU_CLR(i, &cpuset);
+        break;
+      }
+    }
+    pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+    print_binding();
+
+    while(do_progress) {
+      //std::cout << "Calling poll service" << std::endl;
+      mpi_poll_service(nullptr);
+      std::this_thread::sleep_for(std::chrono::microseconds(100));
+    }
+  });
+#endif // defined(USE_PROGRESS_THREAD)
+}
+
+static void stop_progress_thread()
+{
+#if defined(USE_PROGRESS_THREAD)
+  do_progress = 0;
+  progress_thread.join();
+#endif
+}
 
 template<typename UnaryT>
 void parallel_master_with_progress(UnaryT fn)
 {
+  //print_binding();
 #pragma omp parallel default(shared)
 {
 #pragma omp master
 {
   volatile int do_progress = 1; // whether to keep triggering progress
   volatile int in_compute  = 0; // whether the compute task has been launched
+//#if 0
 #if !defined(USE_PROGRESS_THREAD)
   // we cannot safely run this on just one thread
   assert(omp_get_num_threads() > 1);
-  #pragma omp task shared(do_progress)
-#else
-  auto thread = std::thread([&]()
-#endif // USE_PROGRESS_THREAD
+  #pragma omp task shared(do_progress, in_compute)
   {
+    constexpr const auto poll_interval = std::chrono::microseconds{1};
+    //using clock = std::chrono::high_resolution_clock;
+    using clock = std::chrono::system_clock;
+    auto last_progress_ts = clock::now();
     while(do_progress) {
-      //std::cout << "Calling poll service" << std::endl;
-      mpi_poll_service(nullptr);
-#if !defined(USE_PROGRESS_THREAD)
+      auto ts = clock::now();
+      if (poll_interval < ts - last_progress_ts) 
+      {
+        //std::cout << "Calling MPI poll service " << std::endl;
+        mpi_poll_service(nullptr);
+        last_progress_ts = clock::now();
+      }
       // it is not safe to yield here because the thread might steal the compute task
       if (in_compute) {
         #pragma omp taskyield
       } else {
         usleep(1);
       }
-#else
-      std::this_thread::sleep_for(std::chrono::microseconds(1000));
-#endif // USE_PROGRESS_THREAD
     }
-    int myid;
-    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
   }
-#if defined(USE_PROGRESS_THREAD)
-  );
-#endif
-
+#endif // USE_PROGRESS_THREAD
+//#endif 
 #if !defined(USE_PROGRESS_THREAD)
 #pragma omp task default(shared)
 #endif // USE_PROGRESS_THREAD
@@ -306,14 +358,11 @@ void parallel_master_with_progress(UnaryT fn)
   // wait for all tasks created inside the function
   #pragma omp taskwait
 
-  MPI_Barrier(MPI_COMM_WORLD);
+  //MPI_Barrier(MPI_COMM_WORLD);
   do_progress = 0;
 }
 
   #pragma omp taskwait
-#if defined(USE_PROGRESS_THREAD)
-  thread.join();
-#endif // USE_PROGRESS_THREAD
 }
 }
 }

@@ -69,7 +69,7 @@ bool mpi_poll_service(void* data)
   return false; /* signal that we need to continue to be called */
 }
 
-int request_completion_cb(void *data)
+void request_completion_cb(void *data)
 {
   int flag;
   omp_event_handle_t *event_ptr = static_cast<omp_event_handle_t*>(data);
@@ -79,15 +79,13 @@ int request_completion_cb(void *data)
   omp_fulfill_event(*event_ptr);
 
   delete event_ptr;
-  
-  return MPI_SUCCESS;
 }
 
 static void wait_for_reqs(omp_event_handle_t event, MPI_Request *reqs)
 {
   int flag = 0;
   omp_event_handle_t * event_ptr = new omp_event_handle_t{event};
-  MPI_Continueall(2, reqs, &flag, event_ptr, MPI_STATUSES_IGNORE, cont_req);
+  MPI_Continueall(2, reqs, &flag, &request_completion_cb, event_ptr, MPI_STATUSES_IGNORE, cont_req);
   if (!flag) {
     //++active_reqs;
     auto ar = std::atomic_fetch_add_explicit(&active_reqs, 1, std::memory_order_relaxed) +1;

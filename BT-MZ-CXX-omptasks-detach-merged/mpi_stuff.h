@@ -86,7 +86,7 @@ extern ArrayT1<int, int>
 void mpi_setup();
 
 extern MPI_Request cont_req;
-int request_completion_cb(void *data);
+void request_completion_cb(void *data);
 
 
 void map_zones(
