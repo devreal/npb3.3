@@ -1,0 +1,8 @@
+*.o
+*.sample
+.gdb_history
+npbparams_cc.h
+npbparams.h
+mcxx_*
+output.log*
+*.bak
