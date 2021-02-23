@@ -2,7 +2,7 @@ SHELL=/bin/sh
 BENCHMARK=bt-mz
 BENCHMARKU=BT-MZ
 VEC=
-IMPL=cxx-ompss2tasks-continue-events-merged
+IMPL=cxx-ompss2tasks-tampi-events-merged
 
 include ../config/make.def
 
@@ -28,6 +28,10 @@ OMPSSROOT=${HOME}/opt/ompss-2-2019.11.2/include/
 # The OmpSs-2 compiler requires a different set of arguments, e.g., C++11
 OMPCC = mcxx --cxx=clang++ -std=c++11 --ompss-2 -k -g -O2 -march=haswell -DNDEBUG -mcmodel=medium
 
+TAMPI_INC=-I$(TAMPIROOT)/include
+TAMPI_LIB=-L$(TAMPIROOT)/lib -ltampi
+
+CXXFLAGS+=$(TAMPI_INC)
 
 # npbparams.h is included by header.h
 # The following rule should do the trick but many make programs (not gmake)

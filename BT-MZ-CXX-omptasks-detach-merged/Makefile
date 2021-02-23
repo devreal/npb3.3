@@ -16,13 +16,13 @@ include ../config/make.def
 OBJS = bt.o exact_rhs.o exch_qbc.o  mpi_setup.o  set_constants.o  zone_setup.o \
         ${COMMON}/c_print_results.o ${COMMON}/c_timers.o
 
+include ../sys/make.common
+
 CXX=clang++ $(shell mpicxx -showme:compile) --gcc-toolchain=/sw/installed/GCCcore/7.3.0/
 CXXLINK=clang++ $(shell mpicxx -showme:link) --gcc-toolchain=/sw/installed/GCCcore/7.3.0/
 
-include ../sys/make.common
 
-
-CXXLINKFLAGS += -fopenmp -fopenmp-version=50 -L/lustre/cray/ws9/2/ws/hpcjschu-clang/opt-hawk/clang-trunk/lib
+CXXLINKFLAGS += -fopenmp -fopenmp-version=50
 CXXFLAGS += -fopenmp -fopenmp-version=50
 
 
